@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "db:up": "docker compose up -d",
+    "db:wait": "node -e \"const {execSync}=require('child_process');for(;;){try{execSync('docker inspect --format={{.State.Health.Status}} payments_pg',{stdio:'pipe'}).toString().includes('healthy')?process.exit(0):0;}catch(_){};Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,500);} \"",
+    "db:migrate": "ts-node migrations/run.ts",
+    "db:seed": "docker exec -i payments_pg psql -U app -d payments < seeds/001_seed.sql",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "worker": "ts-node-dev --respawn --transpile-only src/worker.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  }
+}

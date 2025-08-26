@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "rootDir": ".",            // ⬅️ was "./src"
+    "outDir": "./dist",
+    "module": "commonjs",
+    "target": "ES2020",
+    "lib": ["ES2020"],
+    "types": ["node"],
+    "sourceMap": true,
+    "declaration": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src", "migrations"],   // ⬅️ make sure migrations is included
+  "exclude": ["node_modules", "dist"]
+}
