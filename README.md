@@ -10,6 +10,7 @@ A simple **TypeScript + Node.js + Postgres** project that demonstrates:
 - Dockerized **Postgres + pgAdmin** for easy setup
 
 ---
+
 ## 🏗 Architecture
 
 ```mermaid
@@ -49,128 +50,128 @@ flowchart LR
 
 ```
 
-  ##Project Structure
+---
 
-  payments-service/
+## 📂 Project Structure
+
+```
+payments-service/
 ├─ src/
 │  ├─ app.ts              # Express app setup
-│  ├─ server.ts           # API entrypoint (POST /webhooks/payments)
+│  ├─ server.ts           # API entrypoint
 │  ├─ worker.ts           # Async worker loop
 │  ├─ db/                 # Pool, transactions, advisory locks
-│  ├─ repositories/       # SQL access (invoices, payments, queue)
-│  ├─ services/           # Core business logic
-│  ├─ controllers/        # Request handlers
-│  ├─ routes/             # API routes
-│  ├─ utils/              # Logger, error helpers
+│  ├─ repositories/       # SQL access
+│  ├─ services/           # Business logic
+│  ├─ controllers/        # Route handlers
+│  ├─ routes/             # Express routes
+│  ├─ utils/              # Logger + helpers
 │  └─ validation/         # Zod schemas
 ├─ migrations/            # SQL migrations + runner
 │  ├─ 001_init.sql
 │  └─ run.ts
-├─ seeds/                 # Seed data (invoices)
+├─ seeds/                 # Seed data
 │  └─ 001_seed.sql
 ├─ docker-compose.yml     # Postgres + pgAdmin
-├─ .env.example           # Example environment variables
+├─ .env.example           # Environment variables
 └─ package.json
+```
 
+---
 
-Getting Started:
+## 🚀 Getting Started
 
-1. Clone & Install
-   git clone https://github.com/dk2396/payment-service.git
-   cd payments-service
-   npm install
+### 1. Clone & Install
+```bash
+git clone https://github.com/dk2396/payment-service.git
+cd payments-service
+npm install
+```
 
-2. Environment
-   cp .env.example .env
-   Default config:
-      DATABASE_URL=postgres://app:app@localhost:55432/payments
-      PORT=3000
+### 2. Environment
+Copy example env file:
+```bash
+cp .env.example .env
+```
 
-3. Start Postgres + pgAdmin
-   npm run db:up
+Default config:
+```ini
+DATABASE_URL=postgres://app:app@localhost:55432/payments
+PORT=3000
+```
 
-      Postgres: localhost:55432
+### 3. Start Postgres + pgAdmin
+```bash
+npm run db:up
+```
 
-      pgAdmin: http://localhost:5050
+- Postgres: `localhost:55432`  
+- pgAdmin: http://localhost:5050  
+  - Email: `admin@example.com`  
+  - Password: `admin`
 
-         Email: admin@example.com
+👉 In pgAdmin, register a server:
+- Host: `db`  
+- Port: `5432`  
+- Username: `app`  
+- Password: `app`
 
-         Password: admin
+### 4. Apply schema & seed invoices
+```bash
+npm run db:migrate
+npm run db:seed
+```
 
-      In pgAdmin, register a server:
+### 5. Run API & Worker
+Open two terminals:
+```bash
+npm run dev     # API (Express)
+npm run worker  # Worker (event processor)
+```
 
-         Host: db
+---
 
-         Port: 5432
+## 🔌 API Usage
 
-         Username: app
+### POST `/webhooks/payments`
 
-         Password: app
-
-4. Apply schema & seed invoices
-   npm run db:migrate
-   npm run db:seed
-
-5. Run API & Worker
-   Two terminals:
-      npm run dev     # API (Express)
-      npm run worker  # Worker (event processor)
-
-
-API Usage:
-
-POST /webhooks/payments
-
-   curl -X POST http://localhost:3000/webhooks/payments \
-  -H 'content-type: application/json' \
-  -d '{
+```bash
+curl -X POST http://localhost:3000/webhooks/payments   -H 'content-type: application/json'   -d '{
     "event_id":"6b1b36c0-2c4a-4b3f-bc54-6b5b3f3d86c4",
     "type":"payment",
     "invoice_id":"550e8400-e29b-41d4-a716-446655440000",
     "amount_cents":3000
   }'
+```
 
+**Fields**
+- `event_id`: unique UUID (idempotency key)  
+- `type`: `"payment"`  
+- `invoice_id`: UUID of an existing invoice  
+- `amount_cents`: positive integer  
 
-   event_id: unique UUID (idempotency key)
-
-   type: "payment"
-
-   invoice_id: UUID of an existing invoice
-
-   amount_cents: positive integer
-
-Responses:
-
-   202 Accepted → event enqueued
-
-   400 Bad Request → invalid payload
+**Responses**
+- `202 Accepted` → event enqueued  
+- `400 Bad Request` → invalid payload  
 
 The worker processes events asynchronously.
 
+---
 
-Invoice Lifecycle:
+## 🧾 Invoice Lifecycle
 
-   Seed invoice → 10,000 cents total, status = sent
+- Seed invoice → `10,000 cents` total, status = `sent`  
+- Payment `3,000` → status → `partially_paid`  
+- Payment `7,000` → status → `paid`  
 
-   Payment 3,000 → status → partially_paid
+Idempotency ensures replays of the same `event_id` don’t double count.
 
-   Payment 7,000 → status → paid
+---
 
-   Idempotency ensures replays of the same event_id don’t double count.
+## ⚙️ Tech Notes
 
-
-Tech Notes:
-
-   Event Queue: event_queue table + worker loop (polling).
-
-   Actor Guarantee: per-invoice serialization via pg_advisory_lock(invoice_id).
-
-   Idempotency: enforced by payments.event_id PK.
-
-   Validation: Zod schema checks UUIDs + positive amounts.
-
-   Atomicity: insert payment + update invoice status wrapped in one transaction.
-
-
-
-
+- **Event Queue:** `event_queue` table + worker loop (polling).  
+- **Actor Guarantee:** serialization via `pg_advisory_lock(invoice_id)`.  
+- **Idempotency:** enforced by `payments.event_id` PK.  
+- **Validation:** Zod schemas validate UUIDs + positive amounts.  
+- **Atomicity:** insert + update happens in one DB transaction.  
