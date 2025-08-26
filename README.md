@@ -13,15 +13,40 @@ A simple **TypeScript + Node.js + Postgres** project that demonstrates:
 ## 🏗 Architecture
 
 ```mermaid
-graph LR
-  C[Webhook Sender] --> API[Express API: POST /webhooks/payments]
-  API --> Q[Event queue (event_queue table)]
-  W[Worker (actor per invoice id)] --> Q
-  W --> PAY[payments table]
-  W --> INV[invoices table]
-  PG[pgAdmin UI] --- INV
-  PG --- PAY
-  PG --- Q
+flowchart LR
+  C[Webhook Sender]
+
+  subgraph Service
+    API[Express API: POST /webhooks/payments]
+    Q[event_queue_table]
+    W[Worker_actor_per_invoice_id]
+  end
+
+  subgraph Postgres
+    INV[invoices]
+    PAY[payments]
+  end
+
+  subgraph Admin
+    PG[pgAdmin UI]
+  end
+
+  C -->|JSON event_id, type, invoice_id, amount_cents| API
+  API -->|Validate and enqueue 202| Q
+
+  W -->|Dequeue batch| Q
+  W -->|Advisory lock by invoice_id| INV
+  W -->|BEGIN tx| INV
+  W -->|Insert payment idempotent by event_id| PAY
+  W -->|Sum payments for invoice| PAY
+  W -->|Update invoice status| INV
+  W -->|COMMIT tx| INV
+  W -->|Delete processed event| Q
+
+  PG <-->|Inspect DB| INV
+  PG <-->|Inspect DB| PAY
+  PG <-->|Inspect DB| Q
+
 ```
 
   ##Project Structure
