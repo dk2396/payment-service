@@ -10,9 +10,6 @@ A simple **TypeScript + Node.js + Postgres** project that demonstrates:
 - Dockerized **Postgres + pgAdmin** for easy setup
 
 ---
-
-## 🏗 Architecture
-
 ## 🏗 Architecture
 
 ```mermaid
@@ -22,7 +19,7 @@ flowchart LR
   subgraph Service
     API[Express API: POST /webhooks/payments]
     Q[(event_queue table)]
-    W[Worker (actor per invoice\_id)]
+    W[Worker (actor per invoice_id)]
   end
 
   subgraph Postgres
@@ -38,17 +35,18 @@ flowchart LR
   API -->|Validate & enqueue (202)| Q
 
   W -->|Dequeue batch| Q
+  W -->|Advisory lock (by invoice_id)| INV
   W -->|BEGIN tx| INV
-  W -->|Insert payment (idempotent on event\_id)| PAY
-  W -->|Sum payments by invoice| PAY
-  W -->|Update status| INV
+  W -->|Insert payment (idempotent by event_id)| PAY
+  W -->|Sum payments for invoice| PAY
+  W -->|Update invoice status| INV
   W -->|COMMIT tx| INV
-  W -->|Delete event| Q
+  W -->|Delete processed event| Q
 
   PG <-->|Inspect DB| INV
   PG <-->|Inspect DB| PAY
   PG <-->|Inspect DB| Q
-
+```
 
   ##Project Structure
 
