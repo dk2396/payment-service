@@ -3,7 +3,7 @@ import { getInvoice, updateInvoiceStatus } from "../repositories/invoices.repo";
 import { insertPaymentIdempotent, sumPaymentsForInvoice } from "../repositories/payments.repo";
 import { lockInvoice, unlockInvoice } from "../db/locks";
 
-/** Core transactional logic for applying a payment & updating status */
+
 export async function applyPaymentTransaction(
   client: PoolClient,
   payload: { event_id: string; invoice_id: string; amount_cents: number }
@@ -12,7 +12,7 @@ export async function applyPaymentTransaction(
 
   await lockInvoice(client, invoice_id);
   try {
-    // begin is expected to be managed by caller (worker)
+   
     const invoice = await getInvoice(client, invoice_id);
     if (!invoice) throw new Error("Invoice not found");
 
