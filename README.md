@@ -13,42 +13,41 @@ A simple **TypeScript + Node.js + Postgres** project that demonstrates:
 
 ## 🏗 Architecture
 
+## 🏗 Architecture
+
 ```mermaid
 flowchart LR
-    subgraph Client Side
-      C[Webhook Sender]
-    end
+  C[Webhook Sender]
 
-    subgraph Service
-      API[Express API<br/>POST /webhooks/payments]
-      Q[(event_queue<br/>table)]
-      W[Worker<br/>(actor per invoice_id)]
-    end
+  subgraph Service
+    API[Express API: POST /webhooks/payments]
+    Q[(event_queue table)]
+    W[Worker (actor per invoice\_id)]
+  end
 
-    subgraph Postgres
-      INV[(invoices)]
-      PAY[(payments)]
-    end
+  subgraph Postgres
+    INV[(invoices)]
+    PAY[(payments)]
+  end
 
-    subgraph Admin
-      PG[pgAdmin UI]
-    end
+  subgraph Admin
+    PG[pgAdmin UI]
+  end
 
-    C -->|JSON event<br/>{event_id,type,invoice_id,amount_cents}| API
-    API -->|Validate + Enqueue<br/>(202 Accepted)| Q
+  C -->|JSON {event_id,type,invoice_id,amount_cents}| API
+  API -->|Validate & enqueue (202)| Q
 
-    W -->|Dequeue batch| Q
-    W -->|Advisory lock<br/>pg_advisory_lock(invoice_id)| INV
-    W -->|BEGIN tx| INV
-    W -->|Idempotent insert<br/>payments(event_id PK)| PAY
-    W -->|SUM payments by invoice| PAY
-    W -->|Compute status & UPDATE| INV
-    W -->|COMMIT tx| INV
-    W -->|Delete processed event| Q
+  W -->|Dequeue batch| Q
+  W -->|BEGIN tx| INV
+  W -->|Insert payment (idempotent on event\_id)| PAY
+  W -->|Sum payments by invoice| PAY
+  W -->|Update status| INV
+  W -->|COMMIT tx| INV
+  W -->|Delete event| Q
 
-    PG <-->|Inspect DB| INV
-    PG <-->|Inspect DB| PAY
-    PG <-->|Inspect DB| Q
+  PG <-->|Inspect DB| INV
+  PG <-->|Inspect DB| PAY
+  PG <-->|Inspect DB| Q
 
 
   ##Project Structure
