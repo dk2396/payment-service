@@ -13,6 +13,7 @@ A simple **TypeScript + Node.js + Postgres** project that demonstrates:
 
 ## 🏗 Architecture
 
+```mermaid
 flowchart LR
     subgraph Client Side
       C[Webhook Sender]
@@ -49,7 +50,6 @@ flowchart LR
     PG <-->|Inspect DB| PAY
     PG <-->|Inspect DB| Q
 
-  
 
   ##Project Structure
 
@@ -78,7 +78,7 @@ flowchart LR
 Getting Started:
 
 1. Clone & Install
-   git clone <your-repo-url>
+   git clone https://github.com/dk2396/payment-service.git
    cd payments-service
    npm install
 
